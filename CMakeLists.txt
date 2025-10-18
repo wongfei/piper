@@ -11,13 +11,16 @@ if(MSVC)
   # Force compiler to use UTF-8 for IPA constants
   add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
   add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+  add_compile_definitions("PIPER_EXPORTS")
 elseif(NOT APPLE)
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+add_library(piper SHARED src/cpp/piper.cpp src/cpp/piper_wrapper.cpp)
+#add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+
 add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
 
 # NOTE: external project prefix are shortened because of path length restrictions on Windows
@@ -168,5 +171,10 @@ install(
 
 install(
   FILES ${PIPER_PHONEMIZE_DIR}/share/libtashkeel_model.ort
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
+
+install(
+  FILES ${CMAKE_CURRENT_LIST_DIR}/src/cpp/piper_wrapper.h
   DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
