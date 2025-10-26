@@ -18,10 +18,15 @@ elseif(NOT APPLE)
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-add_library(piper SHARED src/cpp/piper.cpp src/cpp/piper_wrapper.cpp)
-#add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+if (BUILD_WRAPPER)
+  add_library(piper SHARED src/cpp/piper.cpp src/cpp/piper_wrapper.cpp)
+else()
+  add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+endif()
 
-add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
+if (BUILD_TESTS)
+  add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
+endif()
 
 # NOTE: external project prefix are shortened because of path length restrictions on Windows
 # NOTE: onnxruntime is pulled from piper-phonemize
@@ -39,9 +44,15 @@ if(NOT DEFINED FMT_DIR)
     URL "https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${FMT_DIR}
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
+	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
+	CMAKE_ARGS -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
   )
   add_dependencies(piper fmt_external)
-  add_dependencies(test_piper fmt_external)
+  if (BUILD_TESTS)
+    add_dependencies(test_piper fmt_external)
+  endif()
 endif()
 
 # ---- spdlog ---
@@ -54,9 +65,15 @@ if(NOT DEFINED SPDLOG_DIR)
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/s"
     URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
+	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
+	CMAKE_ARGS -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
   )
   add_dependencies(piper spdlog_external)
-  add_dependencies(test_piper spdlog_external)
+  if (BUILD_TESTS)
+    add_dependencies(test_piper spdlog_external)
+  endif()
 endif()
 
 # ---- piper-phonemize ---
@@ -68,9 +85,15 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
     URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
+	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
+	CMAKE_ARGS -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
   )
   add_dependencies(piper piper_phonemize_external)
-  add_dependencies(test_piper piper_phonemize_external)
+  if (BUILD_TESTS)
+    add_dependencies(test_piper piper_phonemize_external)
+  endif()
 endif()
 
 # ---- Declare executable ----
@@ -87,15 +110,16 @@ endif()
 target_link_libraries(piper
   fmt
   spdlog
+  onnxruntime
   espeak-ng
   piper_phonemize
-  onnxruntime
   ${PIPER_EXTRA_LIBRARIES}
 )
 
 target_link_directories(piper PUBLIC
   ${FMT_DIR}/lib
   ${SPDLOG_DIR}/lib
+  ${ESPEAK_NG_DIR}/lib
   ${PIPER_PHONEMIZE_DIR}/lib
 )
 
@@ -108,6 +132,9 @@ target_include_directories(piper PUBLIC
 target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
 # ---- Declare test ----
+
+if (BUILD_TESTS)
+
 include(CTest)
 enable_testing()
 add_test(
@@ -138,6 +165,8 @@ target_link_libraries(test_piper PUBLIC
   piper_phonemize
   onnxruntime
 )
+
+endif()
 
 # ---- Declare install targets ----
 
