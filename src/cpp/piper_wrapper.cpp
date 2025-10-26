@@ -150,4 +150,30 @@ PIPER_API int piper_text_to_file(piper_context* context, const char* text, const
 	return -1;
 }
 
+#define PIPER_BIND_FP(name) api->name##_fp = &name
+
+PIPER_FUNC (int, piper_get_api, (struct piper_api* api))
+{
+	if (!api) return -1;
+
+	PIPER_BIND_FP(piper_get_error);
+
+	PIPER_BIND_FP(piper_init);
+	PIPER_BIND_FP(piper_release);
+
+	PIPER_BIND_FP(piper_get_voice_sample_rate);
+	PIPER_BIND_FP(piper_get_voice_sample_bytes);
+	PIPER_BIND_FP(piper_get_voice_channels);
+
+	PIPER_BIND_FP(piper_alloc_buffer);
+	PIPER_BIND_FP(piper_free_buffer);
+	PIPER_BIND_FP(piper_get_buffer_data);
+	PIPER_BIND_FP(piper_get_buffer_size);
+
+	PIPER_BIND_FP(piper_text_to_buffer);
+	PIPER_BIND_FP(piper_text_to_file);
+
+	return 0;
+}
+
 } // extern "C"
