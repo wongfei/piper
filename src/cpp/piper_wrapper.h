@@ -33,7 +33,7 @@ PIPER_FUNC (void, piper_free_buffer, (piper_buffer_ptr bufp));
 PIPER_FUNC (void*, piper_get_buffer_data, (piper_buffer_ptr bufp));
 PIPER_FUNC (size_t, piper_get_buffer_size, (piper_buffer_ptr bufp));
 
-PIPER_FUNC (int, piper_text_to_buffer, (piper_context* context, const char* text, piper_buffer_ptr bufp));
+PIPER_FUNC (int, piper_text_to_buffer, (piper_context* context, const char* text, piper_buffer_ptr bufp, volatile int* pcancel_flag));
 PIPER_FUNC (int, piper_text_to_file, (piper_context* context, const char* text, const char* filename));
 
 }

@@ -88,6 +88,7 @@ struct SynthesisResult {
   double inferSeconds;
   double audioSeconds;
   double realTimeFactor;
+  volatile int* pcancel_flag = nullptr;
 };
 
 struct Voice {

@@ -483,6 +483,10 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   std::map<Phoneme, std::size_t> missingPhonemes;
   for (auto phonemesIter = phonemes.begin(); phonemesIter != phonemes.end();
        ++phonemesIter) {
+
+    if (result.pcancel_flag && *result.pcancel_flag)
+     break;
+
     std::vector<Phoneme> &sentencePhonemes = *phonemesIter;
 
     if (spdlog::should_log(spdlog::level::debug)) {

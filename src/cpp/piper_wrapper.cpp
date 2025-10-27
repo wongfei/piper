@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <spdlog/spdlog.h>
 
 #include "json.hpp"
 #include "piper.hpp"
@@ -36,6 +37,8 @@ PIPER_API piper_context* piper_init(const char* model_path, const char* data_pat
 
 	try
 	{
+		spdlog::set_level(spdlog::level::warn);
+
 		context = new piper_context();
 		context->config.eSpeakDataPath = std::string(data_path);
 		
@@ -116,13 +119,14 @@ PIPER_API size_t piper_get_buffer_size(piper_buffer_ptr bufp)
 	return buf->size() * sizeof(buf->data()[0]);
 }
 
-PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp)
+PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp, volatile int* pcancel_flag)
 {
 	last_error = "";
 	try
 	{
 		auto buf = (piper_buffer_type*)bufp;
 		piper::SynthesisResult res;
+		res.pcancel_flag = pcancel_flag;
 		piper::textToAudio(context->config, context->voice, std::string(text), *buf, res, {});
 		return 0;
 	}
