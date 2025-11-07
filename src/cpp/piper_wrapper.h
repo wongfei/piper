@@ -1,9 +1,13 @@
 #include <stdint.h>
 
-#ifdef PIPER_EXPORTS
-	#define PIPER_API __declspec(dllexport)
-#elif PIPER_IMPORTS
-	#define PIPER_API __declspec(dllimport)
+#if defined(_WIN32) || defined(_WIN64)
+	#ifdef PIPER_EXPORTS
+		#define PIPER_API __declspec(dllexport)
+	#elif PIPER_IMPORTS
+		#define PIPER_API __declspec(dllimport)
+	#else
+		#define PIPER_API
+	#endif
 #else
 	#define PIPER_API
 #endif
