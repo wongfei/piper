@@ -194,15 +194,15 @@ install(
   PATTERN "*.so*"
 )
 
-install(
-  DIRECTORY ${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
-)
+#install(
+#  DIRECTORY ${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data
+#  DESTINATION ${CMAKE_INSTALL_PREFIX}
+#)
 
-install(
-  FILES ${PIPER_PHONEMIZE_DIR}/share/libtashkeel_model.ort
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
-)
+#install(
+#  FILES ${PIPER_PHONEMIZE_DIR}/share/libtashkeel_model.ort
+#  DESTINATION ${CMAKE_INSTALL_PREFIX}
+#)
 
 install(
   FILES ${CMAKE_CURRENT_LIST_DIR}/src/cpp/piper_wrapper.h
