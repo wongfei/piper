@@ -30,7 +30,7 @@ PIPER_API const char* piper_get_error()
 	return last_error.c_str();
 }
 
-PIPER_API piper_context* piper_init(const char* model_path, const char* data_path, int speaker_id, bool use_cuda)
+PIPER_API piper_context* piper_init(const char* model_path, const char* data_path, bool use_cuda)
 {
 	last_error = "";
 	piper_context* context = nullptr;
@@ -42,15 +42,11 @@ PIPER_API piper_context* piper_init(const char* model_path, const char* data_pat
 		context = new piper_context();
 		context->config.eSpeakDataPath = std::string(data_path);
 		
-		std::string implModelPath(model_path);
-		std::string implModelConfigPath(implModelPath + ".json");
+		std::string modelPath(model_path);
+		std::string modelConfigPath(modelPath + ".json");
+		std::optional<piper::SpeakerId> speakerId; //((piper::SpeakerId)speaker_id);
 
-		std::optional<piper::SpeakerId> implSpeakerId;
-		if (speaker_id > 0)
-			implSpeakerId = (piper::SpeakerId)speaker_id;
-
-		piper::loadVoice(context->config, implModelPath, implModelConfigPath, context->voice, implSpeakerId, use_cuda);
-		
+		piper::loadVoice(context->config, modelPath, modelConfigPath, context->voice, speakerId, use_cuda);
 		piper::initialize(context->config);
 	}
 	catch (const std::exception& ex)
@@ -95,6 +91,11 @@ PIPER_API int piper_get_voice_channels(piper_context* context)
 	return context ? context->voice.synthesisConfig.channels : 0;
 }
 
+PIPER_API int piper_get_num_speakers(piper_context* context)
+{
+	return context ? context->voice.modelConfig.numSpeakers : 0;
+}
+
 PIPER_API piper_buffer_ptr piper_alloc_buffer()
 {
 	auto buf = new piper_buffer_type();
@@ -119,14 +120,17 @@ PIPER_API size_t piper_get_buffer_size(piper_buffer_ptr bufp)
 	return buf->size() * sizeof(buf->data()[0]);
 }
 
-PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp, volatile int* pcancel_flag)
+PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp, int speaker_id, volatile int* pcancel_flag)
 {
 	last_error = "";
 	try
 	{
+		context->voice.synthesisConfig.speakerId = speaker_id;
 		auto buf = (piper_buffer_type*)bufp;
+
 		piper::SynthesisResult res;
 		res.pcancel_flag = pcancel_flag;
+		
 		piper::textToAudio(context->config, context->voice, std::string(text), *buf, res, {});
 		return 0;
 	}
@@ -137,13 +141,16 @@ PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, pip
 	return -1;
 }
 
-PIPER_API int piper_text_to_file(piper_context* context, const char* text, const char* filename)
+PIPER_API int piper_text_to_file(piper_context* context, const char* text, const char* filename, int speaker_id)
 {
 	last_error = "";
 	try
 	{
+		context->voice.synthesisConfig.speakerId = speaker_id;
+
 		ofstream audioFile(filename, ios::binary);
 		piper::SynthesisResult res;
+
 		piper::textToWavFile(context->config, context->voice, std::string(text), audioFile, res);
 		return 0;
 	}
@@ -168,6 +175,7 @@ PIPER_FUNC (int, piper_get_api, (struct piper_api* api))
 	PIPER_BIND_FP(piper_get_voice_sample_rate);
 	PIPER_BIND_FP(piper_get_voice_sample_bytes);
 	PIPER_BIND_FP(piper_get_voice_channels);
+	PIPER_BIND_FP(piper_get_num_speakers);
 
 	PIPER_BIND_FP(piper_alloc_buffer);
 	PIPER_BIND_FP(piper_free_buffer);
