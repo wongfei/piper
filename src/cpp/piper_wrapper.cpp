@@ -44,7 +44,7 @@ PIPER_API piper_context* piper_init(const char* model_path, const char* data_pat
 		
 		std::string modelPath(model_path);
 		std::string modelConfigPath(modelPath + ".json");
-		std::optional<piper::SpeakerId> speakerId; //((piper::SpeakerId)speaker_id);
+		std::optional<piper::SpeakerId> speakerId;
 
 		piper::loadVoice(context->config, modelPath, modelConfigPath, context->voice, speakerId, use_cuda);
 		piper::initialize(context->config);
@@ -125,7 +125,15 @@ PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, pip
 	last_error = "";
 	try
 	{
-		context->voice.synthesisConfig.speakerId = speaker_id;
+		const int num_speakers = context->voice.modelConfig.numSpeakers;
+		if (num_speakers > 1) // Multi-speaker model
+		{
+			if (speaker_id < 0 || speaker_id >= num_speakers)
+				speaker_id = 0;
+
+			context->voice.synthesisConfig.speakerId = (piper::SpeakerId)speaker_id;
+		}
+
 		auto buf = (piper_buffer_type*)bufp;
 
 		piper::SynthesisResult res;
