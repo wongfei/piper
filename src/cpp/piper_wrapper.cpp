@@ -60,19 +60,16 @@ PIPER_API piper_context* piper_init(const char* model_path, const char* data_pat
 
 PIPER_API void piper_release(piper_context* context)
 {
-	last_error = "";
-	
 	if (context)
 	{
 		try
 		{
 			piper::terminate(context->config);
+			delete context;
 		}
 		catch (const std::exception& ex)
 		{
-			last_error = ex.what();
 		}
-		delete context;
 	}
 }
 
@@ -120,26 +117,32 @@ PIPER_API size_t piper_get_buffer_size(piper_buffer_ptr bufp)
 	return buf->size() * sizeof(buf->data()[0]);
 }
 
-PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp, int speaker_id, volatile int* pcancel_flag)
+static void piper_configure_speaker(piper_context* context, int speaker_id, float length_scale)
+{
+	const int num_speakers = context->voice.modelConfig.numSpeakers;
+	if (num_speakers > 1) // Multi-speaker model
+	{
+		if (speaker_id < 0 || speaker_id >= num_speakers)
+			speaker_id = 0;
+
+		context->voice.synthesisConfig.speakerId = (piper::SpeakerId)speaker_id;
+	}
+
+	context->voice.synthesisConfig.lengthScale = length_scale;
+}
+
+PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, piper_buffer_ptr bufp, int speaker_id, float length_scale, volatile int* pcancel_flag)
 {
 	last_error = "";
 	try
 	{
-		const int num_speakers = context->voice.modelConfig.numSpeakers;
-		if (num_speakers > 1) // Multi-speaker model
-		{
-			if (speaker_id < 0 || speaker_id >= num_speakers)
-				speaker_id = 0;
-
-			context->voice.synthesisConfig.speakerId = (piper::SpeakerId)speaker_id;
-		}
-
 		auto buf = (piper_buffer_type*)bufp;
-
 		piper::SynthesisResult res;
 		res.pcancel_flag = pcancel_flag;
 		
+		piper_configure_speaker(context, speaker_id, length_scale);
 		piper::textToAudio(context->config, context->voice, std::string(text), *buf, res, {});
+
 		return 0;
 	}
 	catch (const std::exception& ex)
@@ -149,17 +152,17 @@ PIPER_API int piper_text_to_buffer(piper_context* context, const char* text, pip
 	return -1;
 }
 
-PIPER_API int piper_text_to_file(piper_context* context, const char* text, const char* filename, int speaker_id)
+PIPER_API int piper_text_to_file(piper_context* context, const char* text, const char* filename, int speaker_id, float length_scale)
 {
 	last_error = "";
 	try
 	{
-		context->voice.synthesisConfig.speakerId = speaker_id;
-
 		ofstream audioFile(filename, ios::binary);
 		piper::SynthesisResult res;
 
+		piper_configure_speaker(context, speaker_id, length_scale);
 		piper::textToWavFile(context->config, context->voice, std::string(text), audioFile, res);
+
 		return 0;
 	}
 	catch (const std::exception& ex)
