@@ -20,6 +20,7 @@ endif()
 
 if (BUILD_WRAPPER)
   add_library(piper SHARED src/cpp/piper.cpp src/cpp/piper_wrapper.cpp)
+  #add_compile_definitions("ORT_API_MANUAL_INIT")
 else()
   add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
 endif()
@@ -44,9 +45,6 @@ if(NOT DEFINED FMT_DIR)
     URL "https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${FMT_DIR}
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
-	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
-	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
-	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
 	CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
   add_dependencies(piper fmt_external)
@@ -65,9 +63,6 @@ if(NOT DEFINED SPDLOG_DIR)
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/s"
     URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
-	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
-	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
-	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
 	CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
   )
   add_dependencies(piper spdlog_external)
@@ -79,16 +74,27 @@ endif()
 # ---- piper-phonemize ---
 
 if(NOT DEFINED PIPER_PHONEMIZE_DIR)
-  set(PIPER_PHONEMIZE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pi")
+	set(PIPER_PHONEMIZE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pi")
+  
+	set(PIPER_PHONEMIZE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR})
+
+	if(DEFINED ESPEAK_NG_DIR AND NOT ESPEAK_NG_DIR STREQUAL "")
+		list(APPEND PIPER_PHONEMIZE_ARGS -DESPEAK_NG_DIR=${ESPEAK_NG_DIR})
+	endif()
+
+	if(DEFINED ONNXRUNTIME_DIR AND NOT ONNXRUNTIME_DIR STREQUAL "")
+		list(APPEND PIPER_PHONEMIZE_ARGS -DONNXRUNTIME_DIR=${ONNXRUNTIME_DIR})
+	endif()
+
+	if(DEFINED ORT_API_MANUAL_INIT)
+		list(APPEND PIPER_PHONEMIZE_ARGS -DCMAKE_CXX_FLAGS_INIT=-DORT_API_MANUAL_INIT)
+	endif()
+  
   ExternalProject_Add(
     piper_phonemize_external
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
     URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
-	CMAKE_ARGS -DFORCE_RECONFIGURE=${PIPER_FORCE_RECONFIGURE}
-	CMAKE_ARGS -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
-	CMAKE_ARGS -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
-	CMAKE_ARGS -DESPEAK_NG_DIR=${ESPEAK_NG_DIR}
+	CMAKE_ARGS ${PIPER_PHONEMIZE_ARGS}
   )
   add_dependencies(piper piper_phonemize_external)
   if (BUILD_TESTS)
@@ -119,14 +125,12 @@ target_link_libraries(piper
 target_link_directories(piper PUBLIC
   ${FMT_DIR}/lib
   ${SPDLOG_DIR}/lib
-  ${ESPEAK_NG_DIR}/lib
   ${PIPER_PHONEMIZE_DIR}/lib
 )
 
 target_include_directories(piper PUBLIC
   ${FMT_DIR}/include
   ${SPDLOG_DIR}/include
-  ${ESPEAK_NG_DIR}/include
   ${PIPER_PHONEMIZE_DIR}/include
 )
 
